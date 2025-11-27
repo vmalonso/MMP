@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ================================================== -->
+<!-- MMP DTD - Equivalent to mmp.xsd                    -->
+<!-- ================================================== -->
+
+<!-- Root Element -->
+<!ELEMENT POLYGONS (GROUPS?, POLYGON*, SPOT*, IMAGELAYER*)>
+<!ATTLIST POLYGONS
+    creator CDATA #IMPLIED
+    date CDATA #IMPLIED
+    project CDATA #IMPLIED
+>
+
+<!-- ================================================== -->
+<!-- GROUPS Structure                                   -->
+<!-- ================================================== -->
+
+<!ELEMENT GROUPS (GROUP*)>
+
+<!ELEMENT GROUP (ID, NAME, DESCRIPTION, GROUPCOLOR, GROUPCUSTOMCOLOR?)>
+<!ELEMENT ID (#PCDATA)>
+<!ELEMENT NAME (#PCDATA)>
+<!ELEMENT DESCRIPTION (#PCDATA)>
+<!ELEMENT GROUPCOLOR (#PCDATA)> <!-- Integer 0-7 -->
+<!ELEMENT GROUPCUSTOMCOLOR (#PCDATA)> <!-- Hex color -->
+
+<!-- ================================================== -->
+<!-- POLYGON Structure                                  -->
+<!-- ================================================== -->
+
+<!ELEMENT POLYGON (GROUPID?, NAME, DESCRIPTION, ISHOLE, BLOCKED, SHAPE, NOSURFACE, SHOWPINS, SHOWDISTANCES, LINECOLOR, LINECUSTOMCOLOR?, LINEWIDTH, LINESTYLE, AREACOLOR, AREACUSTOMCOLOR?, AREATRANSPARENCY, SHOWNAME, SHOWLABELBACKGROUND, SHOWAREAMEASURE, SHOWPERIMETERMEASURE, COORDINATEPOLYGONLABELLATITUDE, COORDINATEPOLYGONLABELLONGITUDE, COORDINATEPERIMETERLABELLATITUDE, COORDINATEPERIMETERLABELLONGITUDE, COORDINATEAREALABELLATITUDE, COORDINATEAREALABELLONGITUDE, GRID?, PICTURES?, POINTS?)>
+
+<!ELEMENT GROUPID (#PCDATA)>
+<!ELEMENT ISHOLE (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+<!ELEMENT BLOCKED (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+<!ELEMENT SHAPE (#PCDATA)> <!-- Integer: 0=polygon, 1=circle, 2=rectangle -->
+<!ELEMENT NOSURFACE (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+<!ELEMENT SHOWPINS (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+<!ELEMENT SHOWDISTANCES (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+<!ELEMENT LINECOLOR (#PCDATA)> <!-- Integer 0-6 -->
+<!ELEMENT LINECUSTOMCOLOR (#PCDATA)> <!-- Hex color -->
+<!ELEMENT LINEWIDTH (#PCDATA)> <!-- Integer 0-10 -->
+<!ELEMENT LINESTYLE (#PCDATA)> <!-- Integer 0-4 -->
+<!ELEMENT AREACOLOR (#PCDATA)> <!-- Integer 0-6 -->
+<!ELEMENT AREACUSTOMCOLOR (#PCDATA)> <!-- Hex color -->
+<!ELEMENT AREATRANSPARENCY (#PCDATA)> <!-- Integer 1-10 -->
+<!ELEMENT SHOWNAME (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+<!ELEMENT SHOWLABELBACKGROUND (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+<!ELEMENT SHOWAREAMEASURE (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+<!ELEMENT SHOWPERIMETERMEASURE (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+<!ELEMENT COORDINATEPOLYGONLABELLATITUDE (#PCDATA)> <!-- Float -->
+<!ELEMENT COORDINATEPOLYGONLABELLONGITUDE (#PCDATA)> <!-- Float -->
+<!ELEMENT COORDINATEPERIMETERLABELLATITUDE (#PCDATA)> <!-- Float -->
+<!ELEMENT COORDINATEPERIMETERLABELLONGITUDE (#PCDATA)> <!-- Float -->
+<!ELEMENT COORDINATEAREALABELLATITUDE (#PCDATA)> <!-- Float -->
+<!ELEMENT COORDINATEAREALABELLONGITUDE (#PCDATA)> <!-- Float -->
+
+<!-- ================================================== -->
+<!-- GRID Structure                                     -->
+<!-- ================================================== -->
+
+<!ELEMENT GRID (CELLWIDTH, CELLHEIGHT, BEARING, REFLATITUDE, REFLONGITUDE, SHOWGRID)>
+<!ELEMENT CELLWIDTH (#PCDATA)> <!-- Float -->
+<!ELEMENT CELLHEIGHT (#PCDATA)> <!-- Float -->
+<!ELEMENT BEARING (#PCDATA)> <!-- Float -->
+<!ELEMENT REFLATITUDE (#PCDATA)> <!-- Float -->
+<!ELEMENT REFLONGITUDE (#PCDATA)> <!-- Float -->
+<!ELEMENT SHOWGRID (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+
+<!-- ================================================== -->
+<!-- PICTURES Structure                                 -->
+<!-- ================================================== -->
+
+<!ELEMENT PICTURES (PICTURE*)>
+
+<!ELEMENT PICTURE (DATE?, PICTUREURL, PICTURETHUMBNAILURL?, SHOWPICTINREPORT?)>
+<!ELEMENT DATE (#PCDATA)> <!-- ISO 8601 date string -->
+<!ELEMENT PICTUREURL (#PCDATA)>
+<!ELEMENT PICTURETHUMBNAILURL (#PCDATA)>
+<!ELEMENT SHOWPICTINREPORT (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+
+<!-- ================================================== -->
+<!-- POINTS Structure                                   -->
+<!-- ================================================== -->
+
+<!ELEMENT POINTS (POINT*)>
+
+<!ELEMENT POINT (LAT, LONG, ALT?, DESCPOINT?, PICTURES?)>
+<!ELEMENT LAT (#PCDATA)> <!-- Float -->
+<!ELEMENT LONG (#PCDATA)> <!-- Float -->
+<!ELEMENT ALT (#PCDATA)> <!-- Float -->
+
+<!ELEMENT DESCPOINT (SHOWDESC?, SHOWLABELBACKGROUND?, SHOWDESCINREPORT?, DESC, DESCLAT, DESCLONG)>
+<!ELEMENT SHOWDESC (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+<!ELEMENT SHOWDESCINREPORT (#PCDATA)> <!-- BinaryFlag: 0 or 1 -->
+<!ELEMENT DESC (#PCDATA)>
+<!ELEMENT DESCLAT (#PCDATA)> <!-- Float -->
+<!ELEMENT DESCLONG (#PCDATA)> <!-- Float -->
+
+<!-- ================================================== -->
+<!-- SPOT Structure                                     -->
+<!-- ================================================== -->
+
+<!ELEMENT SPOT (GROUPID?, NAME, SHOWNAME, SHOWLABELBACKGROUND, ICON, SPOTICONCOLOR, SPOTICONCUSTOMCOLOR?, LAT, LONG, ALT?, PICTURES?, COORDINATESPOTNAMELATITUDE, COORDINATESPOTNAMELONGITUDE, DESCSPOT?)>
+
+<!ELEMENT ICON (#PCDATA)> <!-- Integer -->
+<!ELEMENT SPOTICONCOLOR (#PCDATA)> <!-- Integer 0-7 -->
+<!ELEMENT SPOTICONCUSTOMCOLOR (#PCDATA)> <!-- Hex color -->
+<!ELEMENT COORDINATESPOTNAMELATITUDE (#PCDATA)> <!-- Float -->
+<!ELEMENT COORDINATESPOTNAMELONGITUDE (#PCDATA)> <!-- Float -->
+
+<!ELEMENT DESCSPOT (SHOWDESC?, SHOWDESCINREPORT?, DESC?)>
+
+<!-- ================================================== -->
+<!-- IMAGELAYER Structure                               -->
+<!-- ================================================== -->
+
+<!ELEMENT IMAGELAYER (NAME, IMAGEURL?, OPACITY, LAT1, LONG1, LAT2, LONG2)>
+<!ELEMENT IMAGEURL (#PCDATA)>
+<!ELEMENT OPACITY (#PCDATA)> <!-- Float 0.0-1.0 -->
+<!ELEMENT LAT1 (#PCDATA)> <!-- Float -->
+<!ELEMENT LONG1 (#PCDATA)> <!-- Float -->
+<!ELEMENT LAT2 (#PCDATA)> <!-- Float -->
+<!ELEMENT LONG2 (#PCDATA)> <!-- Float -->

@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+  <!-- ================================================== -->
+  <!-- Simple Types & Restrictions                        -->
+  <!-- ================================================== -->
+
+  <xs:simpleType name="BinaryFlag">
+    <xs:restriction base="xs:integer">
+      <xs:enumeration value="0"/>
+      <xs:enumeration value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="HexColorType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="(#[a-fA-F0-9]{6}|[a-fA-F0-9]{6})"/> <!-- Hexadecimal color (with or without #) -->
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="LineWidthType">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="10"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="AreaTransparencyType">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="1"/>
+      <xs:maxInclusive value="10"/>
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:simpleType name="OpacityType">
+    <xs:restriction base="xs:float">
+      <xs:minInclusive value="0.0"/>
+      <xs:maxInclusive value="1.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ================================================== -->
+  <!-- Complex Types                                      -->
+  <!-- ================================================== -->
+
+  <!-- PICTURE Structure -->
+  <xs:complexType name="PictureType">
+    <!-- xs:all allows fields in any order -->
+    <xs:all>
+      <xs:element name="DATE" type="xs:string" minOccurs="0"/> <!-- ISO 8601 -->
+      <xs:element name="PICTUREURL" type="xs:string"/>
+      <xs:element name="PICTURETHUMBNAILURL" type="xs:string" minOccurs="0"/>
+      <xs:element name="SHOWPICTINREPORT" type="BinaryFlag" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+
+  <xs:complexType name="PicturesContainerType">
+    <!-- Lists must use xs:sequence -->
+    <xs:sequence>
+      <xs:element name="PICTURE" type="PictureType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- GRID Structure -->
+  <xs:complexType name="GridType">
+    <xs:all>
+      <xs:element name="CELLWIDTH" type="xs:float"/>
+      <xs:element name="CELLHEIGHT" type="xs:float"/>
+      <xs:element name="BEARING" type="xs:float"/>
+      <xs:element name="REFLATITUDE" type="xs:float"/>
+      <xs:element name="REFLONGITUDE" type="xs:float"/>
+      <xs:element name="SHOWGRID" type="BinaryFlag"/>
+    </xs:all>
+  </xs:complexType>
+
+  <!-- POINT Structure -->
+  <xs:complexType name="PointDescType">
+    <xs:all>
+      <xs:element name="SHOWDESC" type="BinaryFlag" minOccurs="0"/>
+      <xs:element name="SHOWLABELBACKGROUND" type="BinaryFlag" minOccurs="0"/>
+      <xs:element name="SHOWDESCINREPORT" type="BinaryFlag" minOccurs="0"/>
+      <xs:element name="DESC" type="xs:string"/>
+      <xs:element name="DESCLAT" type="xs:float"/>
+      <xs:element name="DESCLONG" type="xs:float"/>
+    </xs:all>
+  </xs:complexType>
+
+  <xs:complexType name="PointType">
+    <xs:all>
+      <xs:element name="LAT" type="xs:float"/>
+      <xs:element name="LONG" type="xs:float"/>
+      <xs:element name="ALT" type="xs:float" minOccurs="0"/>
+      <xs:element name="DESCPOINT" type="PointDescType" minOccurs="0"/>
+      <xs:element name="PICTURES" type="PicturesContainerType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+
+  <!-- GROUP Structure -->
+  <xs:complexType name="GroupType">
+    <xs:all>
+      <xs:element name="ID" type="xs:string"/>
+      <xs:element name="NAME" type="xs:string"/>
+      <xs:element name="DESCRIPTION" type="xs:string"/>
+      <xs:element name="GROUPCOLOR">
+        <xs:simpleType>
+          <xs:restriction base="xs:integer">
+            <xs:minInclusive value="0"/>
+            <xs:maxInclusive value="7"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="GROUPCUSTOMCOLOR" type="HexColorType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+
+  <!-- POLYGON Structure -->
+  <xs:complexType name="PolygonType">
+    <!-- Properties in any order -->
+    <xs:all>
+      <xs:element name="GROUPID" type="xs:string" minOccurs="0"/>
+      <xs:element name="NAME" type="xs:string"/>
+      <xs:element name="DESCRIPTION" type="xs:string"/>
+      <xs:element name="ISHOLE" type="BinaryFlag"/>
+      <xs:element name="BLOCKED" type="BinaryFlag"/>
+      <xs:element name="SHAPE" default="0">
+        <xs:simpleType>
+          <xs:restriction base="xs:integer">
+            <xs:enumeration value="0"/>  <!-- 0: No shape. It's an ordinary polygon. (Default)-->
+            <xs:enumeration value="1"/> <!-- 1: circle -->
+            <xs:enumeration value="2"/> <!-- 2: rectangle -->
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="NOSURFACE" type="BinaryFlag"/>
+      <xs:element name="SHOWPINS" type="BinaryFlag"/>
+      <xs:element name="SHOWDISTANCES" type="BinaryFlag"/>
+      <xs:element name="LINECOLOR">
+        <xs:simpleType>
+          <xs:restriction base="xs:integer">
+            <xs:minInclusive value="0"/>
+            <xs:maxInclusive value="6"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="LINECUSTOMCOLOR" type="HexColorType" minOccurs="0"/>
+      <xs:element name="LINEWIDTH" type="LineWidthType"/>
+      <xs:element name="LINESTYLE">
+        <xs:simpleType>
+          <xs:restriction base="xs:integer">
+            <xs:minInclusive value="0"/>
+            <xs:maxInclusive value="4"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="AREACOLOR">
+        <xs:simpleType>
+          <xs:restriction base="xs:integer">
+            <xs:minInclusive value="0"/>
+            <xs:maxInclusive value="6"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="AREACUSTOMCOLOR" type="HexColorType" minOccurs="0"/>
+      <xs:element name="AREATRANSPARENCY" type="AreaTransparencyType"/>
+      <xs:element name="SHOWNAME" type="BinaryFlag"/>
+      <xs:element name="SHOWLABELBACKGROUND" type="BinaryFlag"/>
+      <xs:element name="SHOWAREAMEASURE" type="BinaryFlag"/>
+      <xs:element name="SHOWPERIMETERMEASURE" type="BinaryFlag"/>
+      
+      <xs:element name="COORDINATEPOLYGONLABELLATITUDE" type="xs:float"/>
+      <xs:element name="COORDINATEPOLYGONLABELLONGITUDE" type="xs:float"/>  
+      <xs:element name="COORDINATEPERIMETERLABELLATITUDE" type="xs:float"/>    
+      <xs:element name="COORDINATEPERIMETERLABELLONGITUDE" type="xs:float"/>      
+      <xs:element name="COORDINATEAREALABELLATITUDE" type="xs:float"/>
+      <xs:element name="COORDINATEAREALABELLONGITUDE" type="xs:float"/>
+
+      <xs:element name="GRID" type="GridType" minOccurs="0"/>
+      <xs:element name="PICTURES" type="PicturesContainerType" minOccurs="0"/>
+      
+      <!-- Container for the list of points -->
+      <xs:element name="POINTS" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="POINT" type="PointType" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:all>
+  </xs:complexType>
+
+  <!-- SPOT Structure -->
+  <xs:complexType name="SpotDescType">
+    <xs:all>
+      <xs:element name="SHOWDESC" type="BinaryFlag" minOccurs="0"/>
+      <xs:element name="SHOWDESCINREPORT" type="BinaryFlag" minOccurs="0"/>
+      <xs:element name="DESC" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+
+  <xs:complexType name="SpotType">
+    <xs:all>
+      <xs:element name="GROUPID" type="xs:string" minOccurs="0"/>
+      <xs:element name="NAME" type="xs:string"/>
+      <xs:element name="SHOWNAME" type="BinaryFlag"/>
+      <xs:element name="SHOWLABELBACKGROUND" type="BinaryFlag"/>
+      <xs:element name="ICON" type="xs:integer"/>
+      <xs:element name="SPOTICONCOLOR">
+        <xs:simpleType>
+          <xs:restriction base="xs:integer">
+            <xs:minInclusive value="0"/>
+            <xs:maxInclusive value="7"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="SPOTICONCUSTOMCOLOR" type="HexColorType" minOccurs="0"/>
+      <xs:element name="LAT" type="xs:float"/>
+      <xs:element name="LONG" type="xs:float"/>
+      <xs:element name="ALT" type="xs:float" minOccurs="0"/>      
+      <xs:element name="PICTURES" type="PicturesContainerType" minOccurs="0"/>
+      <xs:element name="COORDINATESPOTNAMELATITUDE" type="xs:float"/>
+      <xs:element name="COORDINATESPOTNAMELONGITUDE" type="xs:float"/>  
+      <xs:element name="DESCSPOT" type="SpotDescType" minOccurs="0"/>    
+    </xs:all>
+  </xs:complexType>
+
+  <!-- IMAGELAYER Structure -->
+  <xs:complexType name="ImageLayerType">
+    <xs:all>
+      <xs:element name="NAME" type="xs:string"/>
+      <xs:element name="IMAGEURL" type="xs:string" minOccurs="0"/>
+      <xs:element name="OPACITY" type="OpacityType"/>
+      <xs:element name="LAT1" type="xs:float"/>
+      <xs:element name="LONG1" type="xs:float"/>
+      <xs:element name="LAT2" type="xs:float"/>
+      <xs:element name="LONG2" type="xs:float"/>
+    </xs:all>
+  </xs:complexType>
+
+  <!-- ================================================== -->
+  <!-- Main Definition                                    -->
+  <!-- ================================================== -->
+
+  <xs:element name="POLYGONS">
+    <xs:complexType>
+      <!-- Root uses xs:sequence to maintain the order of lists -->
+      <xs:sequence>
+        
+        <xs:element name="GROUPS" minOccurs="0">
+           <xs:complexType>
+            <xs:sequence>
+              <xs:element name="GROUP" type="GroupType" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="POLYGON" type="PolygonType" minOccurs="0" maxOccurs="unbounded"/>
+        
+        <xs:element name="SPOT" type="SpotType" minOccurs="0" maxOccurs="unbounded"/>
+        
+        <xs:element name="IMAGELAYER" type="ImageLayerType" minOccurs="0" maxOccurs="unbounded"/>
+
+      </xs:sequence>
+
+      <!-- Optional Root Attributes -->
+      <xs:attribute name="creator" type="xs:string" use="optional"/>
+      <xs:attribute name="date" type="xs:string" use="optional"/>
+      <xs:attribute name="project" type="xs:string" use="optional"/>
+      
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
