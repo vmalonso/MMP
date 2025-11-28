@@ -304,6 +304,8 @@ function checkXMLWellFormedness(xmlString) {
     const tagName = match[1];
     const position = match.index;
 
+    console.log(`Tag found: ${fullTag}, Name: ${tagName}, Position: ${position}`);
+
     // Skip self-closing tags and XML declaration
     if (fullTag.startsWith('<?') || fullTag.endsWith('/>')) {
       continue;
@@ -549,26 +551,41 @@ function showErrorResults(errors) {
   statusIcon.className = 'status-icon error';
   statusIcon.innerHTML = `
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 9V11M12 15H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
     `;
   resultsTitle.textContent = 'Errores de Validación';
-  resultsSubtitle.textContent = `Se encontraron ${errors.length} error${errors.length !== 1 ? 'es' : ''}`;
+  resultsSubtitle.textContent = `Se encontraron ${errors.length} problemas en el documento`;
 
-  const errorListHTML = errors.map(error => `
-        <div class="error-item">
-            <div class="error-item-header">
-                <svg class="error-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 9V13M12 17H12.01M5.07183 19H18.9282C20.4678 19 21.4301 17.3333 20.6603 16L13.7321 4C12.9623 2.66667 11.0377 2.66667 10.2679 4L3.33975 16C2.56995 17.3333 3.53223 19 5.07183 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <div class="error-title">${error.type}</div>
-            </div>
-            <div class="error-message">${error.message}</div>
-            ${error.location ? `<div class="error-location">${error.location}</div>` : ''}
+  resultsBody.innerHTML = `
+        <div class="error-list">
+            ${errors.map(error => `
+                <div class="error-item">
+                    <div class="error-item-header">
+                        <svg class="error-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <div class="error-title">${escapeHtml(error.type)}</div>
+                    </div>
+                    <div class="error-message">${escapeHtml(error.message)}</div>
+                    ${error.location ? `<div class="error-location">${escapeHtml(error.location)}</div>` : ''}
+                </div>
+            `).join('')}
         </div>
-    `).join('');
+    `;
+}
 
-  resultsBody.innerHTML = `<div class="error-list">${errorListHTML}</div>`;
+/**
+ * Escape HTML special characters to prevent XSS and rendering issues
+ */
+function escapeHtml(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 // ================================================== 
