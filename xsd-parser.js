@@ -141,6 +141,21 @@ function parseComplexTypes(xsdDoc, schema) {
                     elements[elemName].inlineType = inlineRules;
                 }
             }
+
+            // Check for inline complex type definition (e.g. POINTS container)
+            const inlineComplexType = element.querySelector(':scope > complexType');
+            if (inlineComplexType) {
+                // Parse the inline structure recursively
+                // We can reuse parseElementStructure logic but applied to this inline complex type
+                // But parseElementStructure expects an 'element' node that contains a complexType.
+                // Here we have the element node already.
+
+                // Let's extract the structure parsing logic to a helper or reuse parseElementStructure
+                // parseElementStructure actually takes the parent 'element' and looks for a child 'complexType'.
+                // So we can just call it!
+                const structure = parseElementStructure(element);
+                elements[elemName].structure = structure;
+            }
         });
 
         schema.complexTypes[name] = {
@@ -271,7 +286,7 @@ function parseValue(value, type) {
 /**
  * Validate an XML element against a complex type definition
  */
-function validateAgainstComplexType(element, typeName, schema, errors, path = '') {
+function validateAgainstComplexType(element, typeName, schema, errors, path = '', xmlString = null) {
     const complexType = schema.complexTypes[typeName];
     if (!complexType) {
         console.warn(`Complex type ${typeName} not found in schema`);
@@ -285,10 +300,14 @@ function validateAgainstComplexType(element, typeName, schema, errors, path = ''
         if (elemDef.required) {
             const childElement = element.querySelector(`:scope > ${elemName}`);
             if (!childElement) {
+                // Try to find approximate location of parent
+                const locationInfo = xmlString ? findLocation(xmlString, element.tagName, '') : '';
+                const locationStr = locationInfo ? ` (${locationInfo})` : '';
+
                 errors.push({
                     type: 'Campo Requerido Faltante',
                     message: `${path}: Falta el campo requerido <${elemName}>`,
-                    location: path
+                    location: `${path}${locationStr}`
                 });
             }
         }
@@ -305,10 +324,13 @@ function validateAgainstComplexType(element, typeName, schema, errors, path = ''
             // Skip validation for empty optional fields
             if (value === '') {
                 if (elemDef.required) {
+                    const locationInfo = xmlString ? findLocation(xmlString, elemName, '') : '';
+                    const locationStr = locationInfo ? ` (${locationInfo})` : '';
+
                     errors.push({
                         type: 'Valor Requerido Faltante',
                         message: `${childPath}: El campo <${elemName}> es obligatorio y no puede estar vacío`,
-                        location: childPath
+                        location: `${childPath}${locationStr}`
                     });
                 }
                 return;
@@ -316,16 +338,91 @@ function validateAgainstComplexType(element, typeName, schema, errors, path = ''
 
             // Validate based on type
             if (elemDef.inlineType) {
-                validateValue(value, elemDef.inlineType, errors, childPath, elemName);
+                validateValue(value, elemDef.inlineType, errors, childPath, elemName, xmlString);
+            } else if (elemDef.structure) {
+                // Handle inline complex type structure
+                // We need to validate the child element against this structure
+                // The structure object has { elements: {}, attributes: {} }
+                // We can create a temporary schema-like object or refactor validateAgainstComplexType
+
+                // Let's create a temporary "complex type" definition from the structure
+                // and call validateAgainstComplexType recursively with a fake name
+                // OR better, refactor validateAgainstComplexType to accept a structure object directly.
+
+                // For now, let's implement the validation logic for the structure here directly
+                // This mimics validateAgainstComplexType but uses elemDef.structure
+
+                const structure = elemDef.structure;
+
+                // Check required elements in the inline structure
+                for (const [subElemName, subElemDef] of Object.entries(structure.elements)) {
+                    if (subElemDef.required) {
+                        const subChildElement = childElement.querySelector(`:scope > ${subElemName}`);
+                        if (!subChildElement) {
+                            const locationInfo = xmlString ? findLocation(xmlString, childElement.tagName, '') : '';
+                            const locationStr = locationInfo ? ` (${locationInfo})` : '';
+
+                            errors.push({
+                                type: 'Campo Requerido Faltante',
+                                message: `${childPath}: Falta el campo requerido <${subElemName}>`,
+                                location: `${childPath}${locationStr}`
+                            });
+                        }
+                    }
+                }
+
+                // Validate existing elements in the inline structure
+                for (const [subElemName, subElemDef] of Object.entries(structure.elements)) {
+                    const subChildElements = childElement.querySelectorAll(`:scope > ${subElemName}`);
+
+                    subChildElements.forEach((subChildElement, subIndex) => {
+                        const subChildPath = `${childPath} > ${subElemName}${subChildElements.length > 1 ? `[${subIndex}]` : ''}`;
+                        const subValue = subChildElement.textContent.trim();
+
+                        // Check empty required
+                        if (subValue === '') {
+                            if (subElemDef.required) {
+                                const locationInfo = xmlString ? findLocation(xmlString, subElemName, '') : '';
+                                const locationStr = locationInfo ? ` (${locationInfo})` : '';
+
+                                errors.push({
+                                    type: 'Valor Requerido Faltante',
+                                    message: `${subChildPath}: El campo <${subElemName}> es obligatorio y no puede estar vacío`,
+                                    location: `${subChildPath}${locationStr}`
+                                });
+                            }
+                            return;
+                        }
+
+                        // Validate type
+                        if (subElemDef.type) {
+                            const subSimpleType = schema.simpleTypes[subElemDef.type];
+                            if (subSimpleType) {
+                                validateValue(subValue, subSimpleType, errors, subChildPath, subElemName, xmlString);
+                            } else if (subElemDef.type.startsWith('xs:')) {
+                                validateValue(subValue, { baseType: subElemDef.type, restrictions: {} }, errors, subChildPath, subElemName, xmlString);
+                            } else {
+                                const subComplexType = schema.complexTypes[subElemDef.type];
+                                if (subComplexType) {
+                                    validateAgainstComplexType(subChildElement, subElemDef.type, schema, errors, subChildPath, xmlString);
+                                }
+                            }
+                        }
+                    });
+                }
+
             } else if (elemDef.type) {
                 const simpleType = schema.simpleTypes[elemDef.type];
                 if (simpleType) {
-                    validateValue(value, simpleType, errors, childPath, elemName);
+                    validateValue(value, simpleType, errors, childPath, elemName, xmlString);
+                } else if (elemDef.type.startsWith('xs:')) {
+                    // Handle built-in XSD types
+                    validateValue(value, { baseType: elemDef.type, restrictions: {} }, errors, childPath, elemName, xmlString);
                 } else {
                     // It might be a complex type
                     const complexChildType = schema.complexTypes[elemDef.type];
                     if (complexChildType) {
-                        validateAgainstComplexType(childElement, elemDef.type, schema, errors, childPath);
+                        validateAgainstComplexType(childElement, elemDef.type, schema, errors, childPath, xmlString);
                     }
                 }
             }
@@ -336,28 +433,30 @@ function validateAgainstComplexType(element, typeName, schema, errors, path = ''
 /**
  * Validate a value against a simple type definition
  */
-function validateValue(value, typeRules, errors, path, fieldName) {
+function validateValue(value, typeRules, errors, path, fieldName, xmlString = null) {
     const restrictions = typeRules.restrictions;
+    const locationInfo = xmlString ? findLocation(xmlString, fieldName, value) : '';
+    const locationStr = locationInfo ? ` (${locationInfo})` : '';
 
     // Validate base type first (integer, float, etc.)
     if (typeRules.baseType) {
         if (typeRules.baseType.includes('integer')) {
-            const numValue = parseInt(value);
-            if (isNaN(numValue) || !Number.isInteger(Number(value))) {
+            // Strict integer check
+            if (!/^-?\d+$/.test(value)) {
                 errors.push({
                     type: 'Tipo de Dato Inválido',
-                    message: `${path}: El valor debe ser un número entero`,
-                    location: `Valor actual: ${value}`
+                    message: `${path}: El valor debe ser un número entero válido`,
+                    location: `Valor actual: ${value}${locationStr}`
                 });
                 return;
             }
         } else if (typeRules.baseType.includes('float') || typeRules.baseType.includes('double') || typeRules.baseType.includes('decimal')) {
-            const numValue = parseFloat(value);
-            if (isNaN(numValue)) {
+            // Strict float check
+            if (!/^-?\d*(\.\d+)?$/.test(value) || value === '' || value === '.') {
                 errors.push({
                     type: 'Tipo de Dato Inválido',
-                    message: `${path}: El valor debe ser un número`,
-                    location: `Valor actual: ${value}`
+                    message: `${path}: El valor debe ser un número decimal válido`,
+                    location: `Valor actual: ${value}${locationStr}`
                 });
                 return;
             }
@@ -370,7 +469,7 @@ function validateValue(value, typeRules, errors, path, fieldName) {
             errors.push({
                 type: 'Valor Inválido',
                 message: `${path}: El valor debe ser uno de: ${restrictions.enum.join(', ')}`,
-                location: `Valor actual: ${value}`
+                location: `Valor actual: ${value}${locationStr}`
             });
         }
     }
@@ -383,7 +482,7 @@ function validateValue(value, typeRules, errors, path, fieldName) {
             errors.push({
                 type: 'Valor Fuera de Rango',
                 message: `${path}: El valor debe ser mayor o igual a ${restrictions.minInclusive}`,
-                location: `Valor actual: ${value}`
+                location: `Valor actual: ${value}${locationStr}`
             });
         }
 
@@ -391,7 +490,7 @@ function validateValue(value, typeRules, errors, path, fieldName) {
             errors.push({
                 type: 'Valor Fuera de Rango',
                 message: `${path}: El valor debe ser menor o igual a ${restrictions.maxInclusive}`,
-                location: `Valor actual: ${value}`
+                location: `Valor actual: ${value}${locationStr}`
             });
         }
     }
@@ -403,10 +502,43 @@ function validateValue(value, typeRules, errors, path, fieldName) {
             errors.push({
                 type: 'Formato Inválido',
                 message: `${path}: El valor no cumple con el formato esperado`,
-                location: `Valor actual: ${value}, Patrón: ${restrictions.pattern}`
+                location: `Valor actual: ${value}, Patrón: ${restrictions.pattern}${locationStr}`
             });
         }
     }
+}
+
+/**
+ * Helper to find line number
+ */
+function getLineNumber(xmlString, index) {
+    if (index === -1 || !xmlString) return 'Desconocida';
+    return xmlString.substring(0, index).split('\n').length;
+}
+
+/**
+ * Helper to find location of a value or tag
+ */
+function findLocation(xmlString, tagName, value) {
+    if (!xmlString) return '';
+
+    let index = -1;
+    if (value) {
+        // Try to find >value<
+        index = xmlString.indexOf(`>${value}<`);
+    }
+
+    // If not found or no value (empty tag), try to find the tag
+    if (index === -1) {
+        // This is a heuristic, it finds the first occurrence
+        // Ideally we would pass the index down, but for now this helps
+        index = xmlString.indexOf(`<${tagName}`);
+    }
+
+    if (index !== -1) {
+        return `Línea ${getLineNumber(xmlString, index)}`;
+    }
+    return '';
 }
 
 // Export functions for use in validator.js
@@ -414,6 +546,7 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         parseXSDSchema,
         validateAgainstComplexType,
-        validateValue
+        validateValue,
+        getLineNumber // Exporting helper if needed
     };
 }

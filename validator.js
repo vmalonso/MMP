@@ -267,7 +267,7 @@ function validateXMLAgainstSchema(xmlString) {
     }
 
     // Validate structure
-    const validationErrors = validateStructure(xmlDoc);
+    const validationErrors = validateStructure(xmlDoc, xmlString);
     errors.push(...validationErrors);
 
   } catch (error) {
@@ -356,7 +356,7 @@ function getLineNumber(text, position) {
   return text.substring(0, position).split('\n').length;
 }
 
-function validateStructure(xmlDoc) {
+function validateStructure(xmlDoc, xmlString) {
   const errors = [];
 
   if (!PARSED_SCHEMA) {
@@ -382,7 +382,7 @@ function validateStructure(xmlDoc) {
   }
 
   // Validate root element structure using dynamic validation
-  validateElementDynamic(root, expectedRoot, PARSED_SCHEMA, errors, expectedRoot);
+  validateElementDynamic(root, expectedRoot, PARSED_SCHEMA, errors, expectedRoot, xmlString);
 
   return errors;
 }
@@ -390,7 +390,7 @@ function validateStructure(xmlDoc) {
 /**
  * Dynamically validate an XML element based on parsed XSD schema
  */
-function validateElementDynamic(element, elementName, schema, errors, path = '') {
+function validateElementDynamic(element, elementName, schema, errors, path = '', xmlString = null) {
   // Find the complex type for this element
   let complexTypeName = null;
 
@@ -405,10 +405,26 @@ function validateElementDynamic(element, elementName, schema, errors, path = '')
 
       // Check if required element is missing
       if (childDef.required && childElements.length === 0) {
+        // Try to find approximate location of parent
+        // Since we are at root, we can just search for the child tag that is missing?
+        // No, we want the location where it SHOULD be, which is inside the root.
+        // We can search for the root tag.
+        let locationStr = '';
+        if (xmlString && typeof findLocation === 'function') {
+          // We need to access findLocation from xsd-parser.js scope? 
+          // It's not exported globally but we are in validator.js which uses xsd-parser.js functions.
+          // Wait, findLocation is NOT exported globally in xsd-parser.js unless we attach it to window or export it.
+          // In browser environment, if xsd-parser.js is loaded before, its functions might be global?
+          // No, xsd-parser.js defines functions globally (not in a module/closure) in the browser.
+          // Let's assume findLocation is available globally like parseXSDSchema.
+          const loc = findLocation(xmlString, elementName, '');
+          if (loc) locationStr = ` (${loc})`;
+        }
+
         errors.push({
           type: 'Campo Requerido Faltante',
           message: `${path}: Falta el elemento requerido <${childName}>`,
-          location: path
+          location: `${path}${locationStr}`
         });
       }
 
@@ -423,26 +439,38 @@ function validateElementDynamic(element, elementName, schema, errors, path = '')
           // Check for empty required fields
           if (value === '') {
             if (childDef.required) {
+              let locationStr = '';
+              if (xmlString && typeof findLocation === 'function') {
+                const loc = findLocation(xmlString, childName, '');
+                if (loc) locationStr = ` (${loc})`;
+              }
+
               errors.push({
                 type: 'Valor Requerido Faltante',
                 message: `${childPath}: El campo <${childName}> es obligatorio y no puede estar vacío`,
-                location: childPath
+                location: `${childPath}${locationStr}`
               });
             }
             return;
           }
 
-          validateValue(value, childDef.inlineType, errors, childPath, childName);
+          validateValue(value, childDef.inlineType, errors, childPath, childName, xmlString);
         } else if (childDef.type) {
           const value = childElement.textContent.trim();
 
           // Check for empty required fields
           if (value === '') {
             if (childDef.required) {
+              let locationStr = '';
+              if (xmlString && typeof findLocation === 'function') {
+                const loc = findLocation(xmlString, childName, '');
+                if (loc) locationStr = ` (${loc})`;
+              }
+
               errors.push({
                 type: 'Valor Requerido Faltante',
                 message: `${childPath}: El campo <${childName}> es obligatorio y no puede estar vacío`,
-                location: childPath
+                location: `${childPath}${locationStr}`
               });
             }
             // If it's empty (whether required or not), we can't validate it further against types
@@ -454,11 +482,16 @@ function validateElementDynamic(element, elementName, schema, errors, path = '')
           if (simpleType) {
             // Skip validation for empty optional fields
             if (value !== '' || childDef.required) {
-              validateValue(value, simpleType, errors, childPath, childName);
+              validateValue(value, simpleType, errors, childPath, childName, xmlString);
+            }
+          } else if (childDef.type && childDef.type.startsWith('xs:')) {
+            // Handle built-in XSD types
+            if (value !== '' || childDef.required) {
+              validateValue(value, { baseType: childDef.type, restrictions: {} }, errors, childPath, childName, xmlString);
             }
           } else if (schema.complexTypes[childDef.type]) {
             // It's a complex type
-            validateAgainstComplexType(childElement, childDef.type, schema, errors, childPath);
+            validateAgainstComplexType(childElement, childDef.type, schema, errors, childPath, xmlString);
           }
         }
       });
@@ -471,7 +504,7 @@ function validateElementDynamic(element, elementName, schema, errors, path = '')
   complexTypeName = findComplexTypeForElement(elementName, schema);
 
   if (complexTypeName) {
-    validateAgainstComplexType(element, complexTypeName, schema, errors, path);
+    validateAgainstComplexType(element, complexTypeName, schema, errors, path, xmlString);
   }
 }
 
