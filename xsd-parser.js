@@ -303,7 +303,14 @@ function validateAgainstComplexType(element, typeName, schema, errors, path = ''
             const value = childElement.textContent.trim();
 
             // Skip validation for empty optional fields
-            if (value === '' && !elemDef.required) {
+            if (value === '') {
+                if (elemDef.required) {
+                    errors.push({
+                        type: 'Valor Requerido Faltante',
+                        message: `${childPath}: El campo <${elemName}> es obligatorio y no puede estar vacío`,
+                        location: childPath
+                    });
+                }
                 return;
             }
 

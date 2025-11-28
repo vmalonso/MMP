@@ -119,7 +119,7 @@
     <xs:all>
       <xs:element name="GROUPID" type="xs:string" minOccurs="0"/>
       <xs:element name="NAME" type="xs:string"/>
-      <xs:element name="DESCRIPTION" type="xs:string"/>
+      <xs:element name="DESCRIPTION" type="xs:string" minOccurs="0"/>
       <xs:element name="ISHOLE" type="BinaryFlag"/>
       <xs:element name="BLOCKED" type="BinaryFlag"/>
       <xs:element name="SHAPE" default="0">

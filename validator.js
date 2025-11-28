@@ -419,15 +419,39 @@ function validateElementDynamic(element, elementName, schema, errors, path = '')
         // Check for inline type first (like LINECOLOR, AREACOLOR with inline restrictions)
         if (childDef.inlineType) {
           const value = childElement.textContent.trim();
-          // Skip validation for empty optional fields
-          if (value !== '' || childDef.required) {
-            validateValue(value, childDef.inlineType, errors, childPath, childName);
+
+          // Check for empty required fields
+          if (value === '') {
+            if (childDef.required) {
+              errors.push({
+                type: 'Valor Requerido Faltante',
+                message: `${childPath}: El campo <${childName}> es obligatorio y no puede estar vacío`,
+                location: childPath
+              });
+            }
+            return;
           }
+
+          validateValue(value, childDef.inlineType, errors, childPath, childName);
         } else if (childDef.type) {
+          const value = childElement.textContent.trim();
+
+          // Check for empty required fields
+          if (value === '') {
+            if (childDef.required) {
+              errors.push({
+                type: 'Valor Requerido Faltante',
+                message: `${childPath}: El campo <${childName}> es obligatorio y no puede estar vacío`,
+                location: childPath
+              });
+            }
+            // If it's empty (whether required or not), we can't validate it further against types
+            return;
+          }
+
           // Check if it's a simple type
           const simpleType = schema.simpleTypes[childDef.type];
           if (simpleType) {
-            const value = childElement.textContent.trim();
             // Skip validation for empty optional fields
             if (value !== '' || childDef.required) {
               validateValue(value, simpleType, errors, childPath, childName);
