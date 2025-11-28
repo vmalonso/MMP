@@ -287,6 +287,31 @@ function validateAgainstComplexType(element, typeName, schema, errors, path = ''
 function validateValue(value, typeRules, errors, path, fieldName) {
     const restrictions = typeRules.restrictions;
 
+    // Validate base type first (integer, float, etc.)
+    if (typeRules.baseType) {
+        if (typeRules.baseType.includes('integer')) {
+            const numValue = parseInt(value);
+            if (isNaN(numValue) || !Number.isInteger(Number(value))) {
+                errors.push({
+                    type: 'Tipo de Dato Inválido',
+                    message: `${path}: El valor debe ser un número entero`,
+                    location: `Valor actual: ${value}`
+                });
+                return;
+            }
+        } else if (typeRules.baseType.includes('float') || typeRules.baseType.includes('double') || typeRules.baseType.includes('decimal')) {
+            const numValue = parseFloat(value);
+            if (isNaN(numValue)) {
+                errors.push({
+                    type: 'Tipo de Dato Inválido',
+                    message: `${path}: El valor debe ser un número`,
+                    location: `Valor actual: ${value}`
+                });
+                return;
+            }
+        }
+    }
+
     // Validate enumeration
     if (restrictions.enum) {
         if (!restrictions.enum.includes(value)) {
@@ -299,17 +324,8 @@ function validateValue(value, typeRules, errors, path, fieldName) {
     }
 
     // Validate range for numeric types
-    if (typeRules.baseType && (typeRules.baseType.includes('integer') || typeRules.baseType.includes('float'))) {
+    if (typeRules.baseType && (typeRules.baseType.includes('integer') || typeRules.baseType.includes('float') || typeRules.baseType.includes('double') || typeRules.baseType.includes('decimal'))) {
         const numValue = typeRules.baseType.includes('integer') ? parseInt(value) : parseFloat(value);
-
-        if (isNaN(numValue)) {
-            errors.push({
-                type: 'Tipo de Dato Inválido',
-                message: `${path}: El valor debe ser numérico`,
-                location: `Valor actual: ${value}`
-            });
-            return;
-        }
 
         if (restrictions.minInclusive !== undefined && numValue < restrictions.minInclusive) {
             errors.push({
