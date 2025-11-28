@@ -82,6 +82,7 @@ const statusIcon = document.getElementById('statusIcon');
 const resultsTitle = document.getElementById('resultsTitle');
 const resultsSubtitle = document.getElementById('resultsSubtitle');
 const resultsBody = document.getElementById('resultsBody');
+const resetBtn = document.getElementById('resetBtn');
 
 let currentFile = null;
 
@@ -96,10 +97,10 @@ dropZone.addEventListener('click', () => fileInput.click());
 // File input change
 fileInput.addEventListener('change', handleFileSelect);
 
-// Drag and drop
-dropZone.addEventListener('dragover', handleDragOver);
-dropZone.addEventListener('dragleave', handleDragLeave);
-dropZone.addEventListener('drop', handleDrop);
+// Drag and drop (Global)
+document.addEventListener('dragover', handleDragOver);
+document.addEventListener('dragleave', handleDragLeave);
+document.addEventListener('drop', handleDrop);
 
 // Remove file
 removeFileBtn.addEventListener('click', clearFile);
@@ -107,23 +108,41 @@ removeFileBtn.addEventListener('click', clearFile);
 // Validate
 validateBtn.addEventListener('click', validateFile);
 
+// Reset
+if (resetBtn) {
+  resetBtn.addEventListener('click', clearFile);
+}
+
 // ================================================== 
 // File Handling Functions
 // ================================================== 
 
 function handleDragOver(e) {
   e.preventDefault();
+  e.stopPropagation();
   dropZone.classList.add('drag-over');
+  // Visual feedback for global drag
+  if (dropZone.style.display === 'none') {
+    document.body.classList.add('dragging-file');
+  }
 }
 
 function handleDragLeave(e) {
   e.preventDefault();
-  dropZone.classList.remove('drag-over');
+  e.stopPropagation();
+
+  // Only remove if we're leaving the window or the dropzone
+  if (e.relatedTarget === null || e.target === dropZone) {
+    dropZone.classList.remove('drag-over');
+    document.body.classList.remove('dragging-file');
+  }
 }
 
 function handleDrop(e) {
   e.preventDefault();
+  e.stopPropagation();
   dropZone.classList.remove('drag-over');
+  document.body.classList.remove('dragging-file');
 
   const files = e.dataTransfer.files;
   if (files.length > 0) {
