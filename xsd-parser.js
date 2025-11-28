@@ -91,8 +91,8 @@ function parseComplexTypes(xsdDoc, schema) {
         const name = complexType.getAttribute('name');
         const elements = {};
 
-        // Parse elements within xs:all or xs:sequence
-        const elementNodes = complexType.querySelectorAll('element[name]');
+        // Parse elements within xs:all, xs:sequence, or xs:choice
+        const elementNodes = complexType.querySelectorAll(':scope > all > element, :scope > sequence > element, :scope > choice > element');
 
         elementNodes.forEach(element => {
             const elemName = element.getAttribute('name');
@@ -111,7 +111,7 @@ function parseComplexTypes(xsdDoc, schema) {
             };
 
             // Check for inline simple type definition
-            const inlineSimpleType = element.querySelector('simpleType');
+            const inlineSimpleType = element.querySelector(':scope > simpleType');
             if (inlineSimpleType) {
                 const restriction = inlineSimpleType.querySelector('restriction');
                 if (restriction) {
@@ -153,7 +153,13 @@ function parseComplexTypes(xsdDoc, schema) {
  * Parse root element definition
  */
 function parseRootElement(xsdDoc, schema) {
-    const rootElements = xsdDoc.querySelectorAll(':scope > schema > element[name]');
+    // Get the schema element (root of XSD document)
+    const schemaElement = xsdDoc.documentElement;
+
+    // Find direct child elements of schema that have a name attribute
+    const rootElements = Array.from(schemaElement.children).filter(child =>
+        child.localName === 'element' && child.hasAttribute('name')
+    );
 
     if (rootElements.length > 0) {
         const rootElement = rootElements[0];
@@ -192,7 +198,7 @@ function parseElementStructure(element) {
         });
 
         // Parse child elements
-        const childElements = complexType.querySelectorAll(':scope > sequence > element, :scope > all > element');
+        const childElements = complexType.querySelectorAll(':scope > sequence > element, :scope > all > element, :scope > choice > element');
         childElements.forEach(child => {
             const childName = child.getAttribute('name');
             const childType = child.getAttribute('type');
@@ -203,8 +209,47 @@ function parseElementStructure(element) {
                 type: childType,
                 required: minOccurs !== '0',
                 minOccurs: parseInt(minOccurs),
-                maxOccurs: maxOccurs === 'unbounded' ? Infinity : parseInt(maxOccurs)
+                maxOccurs: maxOccurs === 'unbounded' ? Infinity : parseInt(maxOccurs),
+                inlineType: null
             };
+
+            // Check for inline simple type definition (like LINECOLOR, AREACOLOR, etc.)
+            const inlineSimpleType = child.querySelector(':scope > simpleType');
+            if (inlineSimpleType) {
+                const restriction = inlineSimpleType.querySelector('restriction');
+                if (restriction) {
+                    const baseType = restriction.getAttribute('base');
+                    const inlineRules = {
+                        baseType: baseType,
+                        restrictions: {}
+                    };
+
+                    // Parse inline enumerations
+                    const enums = restriction.querySelectorAll('enumeration');
+                    if (enums.length > 0) {
+                        inlineRules.restrictions.enum = Array.from(enums).map(e => e.getAttribute('value'));
+                    }
+
+                    // Parse inline min/max
+                    const minInc = restriction.querySelector('minInclusive');
+                    if (minInc) {
+                        inlineRules.restrictions.minInclusive = parseValue(minInc.getAttribute('value'), baseType);
+                    }
+
+                    const maxInc = restriction.querySelector('maxInclusive');
+                    if (maxInc) {
+                        inlineRules.restrictions.maxInclusive = parseValue(maxInc.getAttribute('value'), baseType);
+                    }
+
+                    // Parse inline pattern
+                    const pattern = restriction.querySelector('pattern');
+                    if (pattern) {
+                        inlineRules.restrictions.pattern = pattern.getAttribute('value');
+                    }
+
+                    structure.elements[childName].inlineType = inlineRules;
+                }
+            }
         });
     }
 

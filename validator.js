@@ -225,6 +225,13 @@ function validateXMLAgainstSchema(xmlString) {
   const errors = [];
 
   try {
+    // First, perform strict well-formedness check
+    const wellFormednessErrors = checkXMLWellFormedness(xmlString);
+    if (wellFormednessErrors.length > 0) {
+      errors.push(...wellFormednessErrors);
+      return errors;
+    }
+
     // Parse XML
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
@@ -253,6 +260,79 @@ function validateXMLAgainstSchema(xmlString) {
   }
 
   return errors;
+}
+
+/**
+ * Perform strict well-formedness check on XML string
+ * This catches errors that DOMParser might silently fix
+ */
+function checkXMLWellFormedness(xmlString) {
+  const errors = [];
+
+  // Remove comments and CDATA sections for tag matching
+  let cleanXml = xmlString
+    .replace(/<!--[\s\S]*?-->/g, '') // Remove comments
+    .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, ''); // Remove CDATA
+
+  // Extract all tags (opening and closing)
+  const tagRegex = /<\/?([a-zA-Z_][\w.-]*)[^>]*>/g;
+  const stack = [];
+  const tagPositions = [];
+  let match;
+
+  while ((match = tagRegex.exec(cleanXml)) !== null) {
+    const fullTag = match[0];
+    const tagName = match[1];
+    const position = match.index;
+
+    // Skip self-closing tags and XML declaration
+    if (fullTag.startsWith('<?') || fullTag.endsWith('/>')) {
+      continue;
+    }
+
+    // Check if it's a closing tag
+    if (fullTag.startsWith('</')) {
+      if (stack.length === 0) {
+        errors.push({
+          type: 'Error de Estructura XML',
+          message: `Etiqueta de cierre sin apertura: </${tagName}>`,
+          location: `Posición: ${position}`
+        });
+      } else {
+        const lastOpened = stack.pop();
+        if (lastOpened.name !== tagName) {
+          errors.push({
+            type: 'Error de Estructura XML',
+            message: `Etiquetas no coinciden: se esperaba </${lastOpened.name}> pero se encontró </${tagName}>`,
+            location: `Línea aproximada: ${getLineNumber(xmlString, position)}`
+          });
+        }
+      }
+    } else {
+      // Opening tag
+      stack.push({ name: tagName, position: position });
+    }
+  }
+
+  // Check for unclosed tags
+  if (stack.length > 0) {
+    stack.forEach(tag => {
+      errors.push({
+        type: 'Error de Estructura XML',
+        message: `Etiqueta sin cerrar: <${tag.name}>`,
+        location: `Línea aproximada: ${getLineNumber(xmlString, tag.position)}`
+      });
+    });
+  }
+
+  return errors;
+}
+
+/**
+ * Get approximate line number from string position
+ */
+function getLineNumber(text, position) {
+  return text.substring(0, position).split('\n').length;
 }
 
 function validateStructure(xmlDoc) {
@@ -315,9 +395,24 @@ function validateElementDynamic(element, elementName, schema, errors, path = '')
       childElements.forEach((childElement, index) => {
         const childPath = `${path} > ${childName}${childElements.length > 1 ? `[${index}]` : ''}`;
 
-        if (childDef.type) {
-          // Check if it's a complex type
-          if (schema.complexTypes[childDef.type]) {
+        // Check for inline type first (like LINECOLOR, AREACOLOR with inline restrictions)
+        if (childDef.inlineType) {
+          const value = childElement.textContent.trim();
+          // Skip validation for empty optional fields
+          if (value !== '' || childDef.required) {
+            validateValue(value, childDef.inlineType, errors, childPath, childName);
+          }
+        } else if (childDef.type) {
+          // Check if it's a simple type
+          const simpleType = schema.simpleTypes[childDef.type];
+          if (simpleType) {
+            const value = childElement.textContent.trim();
+            // Skip validation for empty optional fields
+            if (value !== '' || childDef.required) {
+              validateValue(value, simpleType, errors, childPath, childName);
+            }
+          } else if (schema.complexTypes[childDef.type]) {
+            // It's a complex type
             validateAgainstComplexType(childElement, childDef.type, schema, errors, childPath);
           }
         }
