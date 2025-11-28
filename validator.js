@@ -90,9 +90,11 @@ let currentFile = null;
 // Event Listeners
 // ================================================== 
 
-// Click to select file
-selectFileBtn.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('click', () => fileInput.click());
+// Click to select file (only the button triggers the file dialog)
+selectFileBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  fileInput.click();
+});
 
 // File input change
 fileInput.addEventListener('change', handleFileSelect);

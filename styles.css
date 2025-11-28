@@ -152,7 +152,6 @@ body {
     padding: var(--spacing-2xl);
     text-align: center;
     transition: all var(--transition-base);
-    cursor: pointer;
     position: relative;
     overflow: hidden;
 }
