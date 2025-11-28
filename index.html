@@ -43,39 +43,33 @@
                                 stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                     </div>
-                    <h2 class="upload-title">Arrastra tu archivo .mmp aquí</h2>
-                    <p class="upload-subtitle">o usa el botón para seleccionar</p>
-                    <input type="file" id="fileInput" accept=".mmp,.xml" hidden>
+                    <h2 class="upload-title">Arrastra tus archivos .mmp aquí</h2>
+                    <p class="upload-subtitle">o usa el botón para seleccionar (puedes seleccionar varios)</p>
+                    <input type="file" id="fileInput" accept=".mmp,.xml" multiple hidden>
                     <button class="btn-primary" id="selectFileBtn">
                         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path
                                 d="M9 13H15M12 10V16M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
-                        Seleccionar Archivo
+                        Seleccionar Archivos
                     </button>
                 </div>
 
-                <!-- File Info -->
-                <div class="file-info" id="fileInfo" style="display: none;">
-                    <div class="file-info-header">
-                        <svg class="file-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M13 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V9L13 2Z"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            <path d="M13 2V9H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                        </svg>
-                        <div class="file-details">
-                            <h3 id="fileName">archivo.mmp</h3>
-                            <p id="fileSize">0 KB</p>
-                        </div>
-                        <button class="btn-remove" id="removeFileBtn">
+                <!-- File List -->
+                <div class="file-list-container" id="fileListContainer" style="display: none;">
+                    <div class="file-list-header">
+                        <h3 id="fileCount">0 archivos seleccionados</h3>
+                        <button class="btn-clear-all" id="clearAllBtn">
                             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
+                            Limpiar todo
                         </button>
+                    </div>
+                    <div class="file-list" id="fileList">
+                        <!-- File items will be injected by JS -->
                     </div>
                     <button class="btn-validate" id="validateBtn">
                         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -83,7 +77,7 @@
                                 d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
-                        Validar Documento
+                        Validar Todos
                     </button>
                 </div>
             </section>
@@ -164,8 +158,8 @@
         </footer>
     </div>
 
-    <script src="xsd-parser.js?v=14"></script>
-    <script src="validator.js?v=14"></script>
+    <script src="xsd-parser.js?v=15"></script>
+    <script src="validator.js?v=15"></script>
 </body>
 
 </html>

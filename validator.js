@@ -72,10 +72,10 @@ loadXSDSchema();
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const selectFileBtn = document.getElementById('selectFileBtn');
-const fileInfo = document.getElementById('fileInfo');
-const fileName = document.getElementById('fileName');
-const fileSize = document.getElementById('fileSize');
-const removeFileBtn = document.getElementById('removeFileBtn');
+const fileListContainer = document.getElementById('fileListContainer');
+const fileList = document.getElementById('fileList');
+const fileCount = document.getElementById('fileCount');
+const clearAllBtn = document.getElementById('clearAllBtn');
 const validateBtn = document.getElementById('validateBtn');
 const resultsSection = document.getElementById('resultsSection');
 const statusIcon = document.getElementById('statusIcon');
@@ -84,7 +84,8 @@ const resultsSubtitle = document.getElementById('resultsSubtitle');
 const resultsBody = document.getElementById('resultsBody');
 const resetBtn = document.getElementById('resetBtn');
 
-let currentFile = null;
+// Store multiple files with their validation status
+let files = [];
 
 // ================================================== 
 // Event Listeners
@@ -104,15 +105,15 @@ document.addEventListener('dragover', handleDragOver);
 document.addEventListener('dragleave', handleDragLeave);
 document.addEventListener('drop', handleDrop);
 
-// Remove file
-removeFileBtn.addEventListener('click', clearFile);
+// Clear all files
+clearAllBtn.addEventListener('click', clearAllFiles);
 
 // Validate
 validateBtn.addEventListener('click', validateFile);
 
 // Reset
 if (resetBtn) {
-  resetBtn.addEventListener('click', clearFile);
+  resetBtn.addEventListener('click', clearAllFiles);
 }
 
 // ================================================== 
@@ -146,49 +147,103 @@ function handleDrop(e) {
   dropZone.classList.remove('drag-over');
   document.body.classList.remove('dragging-file');
 
-  const files = e.dataTransfer.files;
-  if (files.length > 0) {
-    processFile(files[0]);
+  const droppedFiles = e.dataTransfer.files;
+  if (droppedFiles.length > 0) {
+    addFiles(droppedFiles);
   }
 }
 
 function handleFileSelect(e) {
-  const files = e.target.files;
-  if (files.length > 0) {
-    processFile(files[0]);
+  const selectedFiles = e.target.files;
+  if (selectedFiles.length > 0) {
+    addFiles(selectedFiles);
   }
 }
 
-function processFile(file) {
-  // Check file extension
+function addFiles(newFiles) {
   const validExtensions = ['.mmp', '.xml'];
-  const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+  let invalidCount = 0;
 
-  if (!validExtensions.includes(fileExtension)) {
-    alert('Por favor, selecciona un archivo .mmp o .xml válido');
+  for (const file of newFiles) {
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!validExtensions.includes(fileExtension)) {
+      invalidCount++;
+      continue;
+    }
+
+    // Check if file already exists (by name and size)
+    const exists = files.some(f => f.file.name === file.name && f.file.size === file.size);
+    if (!exists) {
+      files.push({
+        file: file,
+        status: 'pending', // pending, validating, valid, invalid
+        errors: []
+      });
+    }
+  }
+
+  if (invalidCount > 0) {
+    alert(`${invalidCount} archivo(s) ignorado(s). Solo se aceptan archivos .mmp o .xml`);
+  }
+
+  updateFileListUI();
+}
+
+function removeFile(index) {
+  files.splice(index, 1);
+  updateFileListUI();
+}
+
+function clearAllFiles() {
+  files = [];
+  fileInput.value = '';
+  updateFileListUI();
+}
+
+function updateFileListUI() {
+  if (files.length === 0) {
+    dropZone.style.display = 'block';
+    fileListContainer.style.display = 'none';
+    resultsSection.style.display = 'none';
     return;
   }
 
-  currentFile = file;
-
-  // Update UI
-  fileName.textContent = file.name;
-  fileSize.textContent = formatFileSize(file.size);
-
-  // Show file info, hide upload card
   dropZone.style.display = 'none';
-  fileInfo.style.display = 'block';
-  resultsSection.style.display = 'none';
+  fileListContainer.style.display = 'block';
+
+  // Update file count
+  fileCount.textContent = `${files.length} archivo${files.length !== 1 ? 's' : ''} seleccionado${files.length !== 1 ? 's' : ''}`;
+
+  // Render file list
+  fileList.innerHTML = files.map((item, index) => `
+    <div class="file-item" data-index="${index}">
+      <svg class="file-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M13 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V9L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13 2V9H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="file-details">
+        <h4>${escapeHtml(item.file.name)}</h4>
+        <span>${formatFileSize(item.file.size)}</span>
+      </div>
+      <span class="file-status ${item.status}">${getStatusText(item.status)}</span>
+      <button class="btn-remove-file" onclick="removeFile(${index})">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  `).join('');
 }
 
-function clearFile() {
-  currentFile = null;
-  fileInput.value = '';
-
-  // Reset UI
-  dropZone.style.display = 'block';
-  fileInfo.style.display = 'none';
-  resultsSection.style.display = 'none';
+function getStatusText(status) {
+  switch (status) {
+    case 'pending': return 'Pendiente';
+    case 'validating': return 'Validando...';
+    case 'valid': return '✓ Válido';
+    case 'invalid': return '✗ Inválido';
+    default: return status;
+  }
 }
 
 function formatFileSize(bytes) {
@@ -204,7 +259,7 @@ function formatFileSize(bytes) {
 // ================================================== 
 
 async function validateFile() {
-  if (!currentFile) return;
+  if (files.length === 0) return;
 
   // Check if XSD schema is loaded
   if (!XSD_SCHEMA) {
@@ -215,22 +270,31 @@ async function validateFile() {
   // Show loading state
   showLoadingResults();
 
-  try {
-    const xmlContent = await readFileAsText(currentFile);
-    const errors = validateXMLAgainstSchema(xmlContent);
+  // Validate all files
+  for (let i = 0; i < files.length; i++) {
+    files[i].status = 'validating';
+    updateFileListUI();
 
-    if (errors.length === 0) {
-      showSuccessResults();
-    } else {
-      showErrorResults(errors);
+    try {
+      const xmlContent = await readFileAsText(files[i].file);
+      const errors = validateXMLAgainstSchema(xmlContent);
+
+      files[i].errors = errors;
+      files[i].status = errors.length === 0 ? 'valid' : 'invalid';
+    } catch (error) {
+      files[i].errors = [{
+        type: 'Error de Lectura',
+        message: error.message,
+        location: null
+      }];
+      files[i].status = 'invalid';
     }
-  } catch (error) {
-    showErrorResults([{
-      type: 'Error de Lectura',
-      message: error.message,
-      location: null
-    }]);
+
+    updateFileListUI();
   }
+
+  // Show combined results
+  showCombinedResults();
 }
 
 function readFileAsText(file) {
@@ -579,7 +643,7 @@ function showLoadingResults() {
   resultsSection.style.display = 'block';
   statusIcon.innerHTML = '<div class="loading"></div>';
   resultsTitle.textContent = 'Validando...';
-  resultsSubtitle.textContent = 'Procesando el documento';
+  resultsSubtitle.textContent = `Procesando ${files.length} archivo${files.length !== 1 ? 's' : ''}`;
   resultsBody.innerHTML = '';
 
   // Scroll to results
@@ -588,50 +652,68 @@ function showLoadingResults() {
   }, 100);
 }
 
-function showSuccessResults() {
-  statusIcon.className = 'status-icon success';
-  statusIcon.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-    `;
-  resultsTitle.textContent = '¡Validación Exitosa!';
-  resultsSubtitle.textContent = 'El documento cumple con el esquema MMP';
-  resultsBody.innerHTML = `
-        <div class="success-message">
-            <p style="margin: 0; font-size: 1rem;">
-                ✓ El archivo <strong>${currentFile.name}</strong> es válido y cumple con todas las especificaciones del esquema XSD.
-            </p>
-        </div>
-    `;
-}
+function showCombinedResults() {
+  const validFiles = files.filter(f => f.status === 'valid');
+  const invalidFiles = files.filter(f => f.status === 'invalid');
+  const totalErrors = invalidFiles.reduce((sum, f) => sum + f.errors.length, 0);
 
-function showErrorResults(errors) {
-  statusIcon.className = 'status-icon error';
-  statusIcon.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 9V11M12 15H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+  if (invalidFiles.length === 0) {
+    // All files valid
+    statusIcon.className = 'status-icon success';
+    statusIcon.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     `;
-  resultsTitle.textContent = 'Errores de Validación';
-  resultsSubtitle.textContent = `Se encontraron ${errors.length} problemas en el documento`;
+    resultsTitle.textContent = '¡Validación Exitosa!';
+    resultsSubtitle.textContent = `${validFiles.length} archivo${validFiles.length !== 1 ? 's' : ''} válido${validFiles.length !== 1 ? 's' : ''}`;
+    resultsBody.innerHTML = `
+      <div class="success-message">
+        <p style="margin: 0; font-size: 1rem;">
+          ✓ Todos los archivos son válidos y cumplen con las especificaciones del esquema XSD.
+        </p>
+      </div>
+    `;
+  } else {
+    // Some or all files have errors
+    statusIcon.className = 'status-icon error';
+    statusIcon.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 9V11M12 15H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+    resultsTitle.textContent = 'Errores de Validación';
+    resultsSubtitle.textContent = `${invalidFiles.length} archivo${invalidFiles.length !== 1 ? 's' : ''} con errores, ${validFiles.length} válido${validFiles.length !== 1 ? 's' : ''}`;
 
-  resultsBody.innerHTML = `
-        <div class="error-list">
-            ${errors.map(error => `
-                <div class="error-item">
-                    <div class="error-item-header">
-                        <svg class="error-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <div class="error-title">${escapeHtml(error.type)}</div>
-                    </div>
-                    <div class="error-message">${escapeHtml(error.message)}</div>
-                    ${error.location ? `<div class="error-location">${escapeHtml(error.location)}</div>` : ''}
-                </div>
-            `).join('')}
+    // Build results HTML grouped by file
+    let resultsHtml = '<div class="error-list">';
+    
+    for (const fileItem of invalidFiles) {
+      resultsHtml += `
+        <div class="file-errors">
+          <div class="file-errors-header">
+            <strong>${escapeHtml(fileItem.file.name)}</strong>
+            <span class="error-count">${fileItem.errors.length} error${fileItem.errors.length !== 1 ? 'es' : ''}</span>
+          </div>
+          ${fileItem.errors.map(error => `
+            <div class="error-item">
+              <div class="error-item-header">
+                <svg class="error-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div class="error-title">${escapeHtml(error.type)}</div>
+              </div>
+              <div class="error-message">${escapeHtml(error.message)}</div>
+              ${error.location ? `<div class="error-location">${escapeHtml(error.location)}</div>` : ''}
+            </div>
+          `).join('')}
         </div>
-    `;
+      `;
+    }
+    
+    resultsHtml += '</div>';
+    resultsBody.innerHTML = resultsHtml;
+  }
 }
 
 /**
