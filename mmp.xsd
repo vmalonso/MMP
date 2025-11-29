@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MMP Schema Definition
+  
+  Blue Blink One
+  https://blueblinkone.com
+  
+  This schema is public and free to use.
+-->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
 
   <!-- ================================================== -->
@@ -259,6 +267,12 @@
       <!-- Root uses xs:sequence to maintain the order of lists -->
       <xs:sequence>
         
+        <xs:element name="POLYGON" type="PolygonType" minOccurs="0" maxOccurs="unbounded"/>
+        
+        <xs:element name="SPOT" type="SpotType" minOccurs="0" maxOccurs="unbounded"/>
+        
+        <xs:element name="IMAGELAYER" type="ImageLayerType" minOccurs="0" maxOccurs="unbounded"/>
+
         <xs:element name="GROUPS" minOccurs="0">
            <xs:complexType>
             <xs:sequence>
@@ -266,12 +280,6 @@
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-
-        <xs:element name="POLYGON" type="PolygonType" minOccurs="0" maxOccurs="unbounded"/>
-        
-        <xs:element name="SPOT" type="SpotType" minOccurs="0" maxOccurs="unbounded"/>
-        
-        <xs:element name="IMAGELAYER" type="ImageLayerType" minOccurs="0" maxOccurs="unbounded"/>
 
       </xs:sequence>
 
