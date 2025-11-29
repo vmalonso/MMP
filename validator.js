@@ -222,7 +222,7 @@ function updateFileListUI() {
         <path d="M13 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V9L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M13 2V9H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <div class="file-details">
+      <div class="file-details ${item.status === 'invalid' ? 'clickable' : ''}" onclick="${item.status === 'invalid' ? `scrollToFileErrors(${index})` : ''}">
         <h4>${escapeHtml(item.file.name)}</h4>
         <span>${formatFileSize(item.file.size)}</span>
       </div>
@@ -252,6 +252,16 @@ function formatFileSize(bytes) {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+function scrollToFileErrors(fileIndex) {
+  const errorSection = document.getElementById(`file-errors-${fileIndex}`);
+  if (errorSection) {
+    errorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Highlight briefly
+    errorSection.classList.add('highlight');
+    setTimeout(() => errorSection.classList.remove('highlight'), 1500);
+  }
 }
 
 // ================================================== 
@@ -835,8 +845,10 @@ function showCombinedResults() {
     let resultsHtml = '<div class="error-list">';
     
     for (const fileItem of invalidFiles) {
+      // Find the original index in the files array
+      const originalIndex = files.indexOf(fileItem);
       resultsHtml += `
-        <div class="file-errors">
+        <div class="file-errors" id="file-errors-${originalIndex}">
           <div class="file-errors-header">
             <strong>${escapeHtml(fileItem.file.name)}</strong>
             <span class="error-count">${fileItem.errors.length} error${fileItem.errors.length !== 1 ? 'es' : ''}</span>
