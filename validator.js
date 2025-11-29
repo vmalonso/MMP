@@ -450,9 +450,6 @@ function validateStructure(xmlDoc, xmlString) {
   // Validate root element structure using dynamic validation
   validateElementDynamic(root, expectedRoot, PARSED_SCHEMA, errors, expectedRoot, xmlString);
 
-  // Check for duplicate names within each element type
-  validateUniqueNames(root, errors);
-
   // Check for unknown elements
   validateNoUnknownElements(root, PARSED_SCHEMA, errors);
 
@@ -524,41 +521,6 @@ function getElementPath(element) {
   return path.join(' > ');
 }
 
-/**
- * Validate that names are unique within each element type (POLYGON, SPOT, GROUP, IMAGELAYER)
- */
-function validateUniqueNames(root, errors) {
-  const elementTypes = ['POLYGON', 'SPOT', 'GROUP', 'IMAGELAYER'];
-  
-  for (const elementType of elementTypes) {
-    const elements = root.querySelectorAll(elementType);
-    const names = new Map(); // name -> array of indices
-    
-    elements.forEach((el, index) => {
-      const nameEl = el.querySelector(':scope > NAME');
-      if (nameEl) {
-        const name = nameEl.textContent.trim();
-        if (name) {
-          if (!names.has(name)) {
-            names.set(name, []);
-          }
-          names.get(name).push(index + 1);
-        }
-      }
-    });
-    
-    // Report duplicates
-    for (const [name, indices] of names.entries()) {
-      if (indices.length > 1) {
-        errors.push({
-          type: 'Nombre Duplicado',
-          message: `El nombre "${name}" está duplicado en ${indices.length} elementos <${elementType}>`,
-          location: `Elementos: ${indices.join(', ')}`
-        });
-      }
-    }
-  }
-}
 
 /**
  * Dynamically validate an XML element based on parsed XSD schema

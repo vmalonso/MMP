@@ -93,9 +93,9 @@
       <xs:element name="SHOWDESC" type="BinaryFlag" minOccurs="0"/>
       <xs:element name="SHOWLABELBACKGROUND" type="BinaryFlag" minOccurs="0"/>
       <xs:element name="SHOWDESCINREPORT" type="BinaryFlag" minOccurs="0"/>
-      <xs:element name="DESC" type="xs:string"/>
-      <xs:element name="DESCLAT" type="LatitudeType"/>
-      <xs:element name="DESCLONG" type="LongitudeType"/>
+      <xs:element name="DESC" type="xs:string" minOccurs="0"/>
+      <xs:element name="DESCLAT" type="LatitudeType"  minOccurs="0"/>
+      <xs:element name="DESCLONG" type="LongitudeType" minOccurs="0"/>
     </xs:all>
   </xs:complexType>
 
