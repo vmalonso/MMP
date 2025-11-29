@@ -453,7 +453,75 @@ function validateStructure(xmlDoc, xmlString) {
   // Check for duplicate names within each element type
   validateUniqueNames(root, errors);
 
+  // Check for unknown elements
+  validateNoUnknownElements(root, PARSED_SCHEMA, errors);
+
   return errors;
+}
+
+/**
+ * Validate that there are no unknown elements in the document
+ */
+function validateNoUnknownElements(root, schema, errors) {
+  // Get all known element names from the schema
+  const knownElements = new Set();
+  
+  // Add root element
+  if (schema.rootElement) {
+    knownElements.add(schema.rootElement.name);
+    collectKnownElements(schema.rootElement.structure, knownElements);
+  }
+  
+  // Add elements from complex types
+  for (const [typeName, typeDef] of Object.entries(schema.complexTypes)) {
+    for (const elemName of Object.keys(typeDef.elements)) {
+      knownElements.add(elemName);
+      // Check if element has inline structure
+      if (typeDef.elements[elemName].structure) {
+        collectKnownElements(typeDef.elements[elemName].structure, knownElements);
+      }
+    }
+  }
+  
+  // Check all elements in the document
+  const allElements = root.querySelectorAll('*');
+  allElements.forEach(element => {
+    const tagName = element.tagName;
+    if (!knownElements.has(tagName)) {
+      errors.push({
+        type: 'Elemento Desconocido',
+        message: `El elemento <${tagName}> no está definido en el esquema`,
+        location: getElementPath(element)
+      });
+    }
+  });
+}
+
+/**
+ * Recursively collect known element names from a structure
+ */
+function collectKnownElements(structure, knownElements) {
+  if (!structure || !structure.elements) return;
+  
+  for (const [elemName, elemDef] of Object.entries(structure.elements)) {
+    knownElements.add(elemName);
+    if (elemDef.structure) {
+      collectKnownElements(elemDef.structure, knownElements);
+    }
+  }
+}
+
+/**
+ * Get the path to an element for error reporting
+ */
+function getElementPath(element) {
+  const path = [];
+  let current = element;
+  while (current && current.tagName) {
+    path.unshift(current.tagName);
+    current = current.parentElement;
+  }
+  return path.join(' > ');
 }
 
 /**
