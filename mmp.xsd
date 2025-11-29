@@ -7,7 +7,7 @@
   
   This schema is public and free to use.
 -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
   <!-- ================================================== -->
   <!-- Simple Types & Restrictions                        -->
@@ -266,7 +266,7 @@
     <xs:complexType>
       <!-- Root uses xs:sequence to maintain the order of lists -->
       <xs:sequence>
-        
+
         <xs:element name="POLYGON" type="PolygonType" minOccurs="0" maxOccurs="unbounded"/>
         
         <xs:element name="SPOT" type="SpotType" minOccurs="0" maxOccurs="unbounded"/>
