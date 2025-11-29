@@ -39,6 +39,20 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <xs:simpleType name="LatitudeType">
+    <xs:restriction base="xs:float">
+      <xs:minInclusive value="-90.0"/>
+      <xs:maxInclusive value="90.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="LongitudeType">
+    <xs:restriction base="xs:float">
+      <xs:minInclusive value="-180.0"/>
+      <xs:maxInclusive value="180.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
   <!-- ================================================== -->
   <!-- Complex Types                                      -->
   <!-- ================================================== -->
@@ -67,8 +81,8 @@
       <xs:element name="CELLWIDTH" type="xs:float"/>
       <xs:element name="CELLHEIGHT" type="xs:float"/>
       <xs:element name="BEARING" type="xs:float"/>
-      <xs:element name="REFLATITUDE" type="xs:float"/>
-      <xs:element name="REFLONGITUDE" type="xs:float"/>
+      <xs:element name="REFLATITUDE" type="LatitudeType"/>
+      <xs:element name="REFLONGITUDE" type="LongitudeType"/>
       <xs:element name="SHOWGRID" type="BinaryFlag"/>
     </xs:all>
   </xs:complexType>
@@ -80,15 +94,15 @@
       <xs:element name="SHOWLABELBACKGROUND" type="BinaryFlag" minOccurs="0"/>
       <xs:element name="SHOWDESCINREPORT" type="BinaryFlag" minOccurs="0"/>
       <xs:element name="DESC" type="xs:string"/>
-      <xs:element name="DESCLAT" type="xs:float"/>
-      <xs:element name="DESCLONG" type="xs:float"/>
+      <xs:element name="DESCLAT" type="LatitudeType"/>
+      <xs:element name="DESCLONG" type="LongitudeType"/>
     </xs:all>
   </xs:complexType>
 
   <xs:complexType name="PointType">
     <xs:all>
-      <xs:element name="LAT" type="xs:float"/>
-      <xs:element name="LONG" type="xs:float"/>
+      <xs:element name="LAT" type="LatitudeType"/>
+      <xs:element name="LONG" type="LongitudeType"/>
       <xs:element name="ALT" type="xs:float" minOccurs="0"/>
       <xs:element name="DESCPOINT" type="PointDescType" minOccurs="0"/>
       <xs:element name="PICTURES" type="PicturesContainerType" minOccurs="0"/>
@@ -167,12 +181,12 @@
       <xs:element name="SHOWAREAMEASURE" type="BinaryFlag"/>
       <xs:element name="SHOWPERIMETERMEASURE" type="BinaryFlag"/>
       
-      <xs:element name="COORDINATEPOLYGONLABELLATITUDE" type="xs:float"/>
-      <xs:element name="COORDINATEPOLYGONLABELLONGITUDE" type="xs:float"/>  
-      <xs:element name="COORDINATEPERIMETERLABELLATITUDE" type="xs:float"/>    
-      <xs:element name="COORDINATEPERIMETERLABELLONGITUDE" type="xs:float"/>      
-      <xs:element name="COORDINATEAREALABELLATITUDE" type="xs:float"/>
-      <xs:element name="COORDINATEAREALABELLONGITUDE" type="xs:float"/>
+      <xs:element name="COORDINATEPOLYGONLABELLATITUDE" type="LatitudeType"/>
+      <xs:element name="COORDINATEPOLYGONLABELLONGITUDE" type="LongitudeType"/>  
+      <xs:element name="COORDINATEPERIMETERLABELLATITUDE" type="LatitudeType"/>    
+      <xs:element name="COORDINATEPERIMETERLABELLONGITUDE" type="LongitudeType"/>      
+      <xs:element name="COORDINATEAREALABELLATITUDE" type="LatitudeType"/>
+      <xs:element name="COORDINATEAREALABELLONGITUDE" type="LongitudeType"/>
 
       <xs:element name="GRID" type="GridType" minOccurs="0"/>
       <xs:element name="PICTURES" type="PicturesContainerType" minOccurs="0"/>
@@ -213,12 +227,12 @@
         </xs:simpleType>
       </xs:element>
       <xs:element name="SPOTICONCUSTOMCOLOR" type="HexColorType" minOccurs="0"/>
-      <xs:element name="LAT" type="xs:float"/>
-      <xs:element name="LONG" type="xs:float"/>
+      <xs:element name="LAT" type="LatitudeType"/>
+      <xs:element name="LONG" type="LongitudeType"/>
       <xs:element name="ALT" type="xs:float" minOccurs="0"/>      
       <xs:element name="PICTURES" type="PicturesContainerType" minOccurs="0"/>
-      <xs:element name="COORDINATESPOTNAMELATITUDE" type="xs:float"/>
-      <xs:element name="COORDINATESPOTNAMELONGITUDE" type="xs:float"/>  
+      <xs:element name="COORDINATESPOTNAMELATITUDE" type="LatitudeType"/>
+      <xs:element name="COORDINATESPOTNAMELONGITUDE" type="LongitudeType"/>  
       <xs:element name="DESCSPOT" type="SpotDescType" minOccurs="0"/>    
     </xs:all>
   </xs:complexType>
@@ -229,10 +243,10 @@
       <xs:element name="NAME" type="xs:string"/>
       <xs:element name="IMAGEURL" type="xs:string" minOccurs="0"/>
       <xs:element name="OPACITY" type="OpacityType"/>
-      <xs:element name="LAT1" type="xs:float"/>
-      <xs:element name="LONG1" type="xs:float"/>
-      <xs:element name="LAT2" type="xs:float"/>
-      <xs:element name="LONG2" type="xs:float"/>
+      <xs:element name="LAT1" type="LatitudeType"/>
+      <xs:element name="LONG1" type="LongitudeType"/>
+      <xs:element name="LAT2" type="LatitudeType"/>
+      <xs:element name="LONG2" type="LongitudeType"/>
     </xs:all>
   </xs:complexType>
 

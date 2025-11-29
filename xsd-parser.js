@@ -265,6 +265,13 @@ function parseElementStructure(element) {
                     structure.elements[childName].inlineType = inlineRules;
                 }
             }
+
+            // Check for inline complex type definition (like GROUPS containing GROUP)
+            const inlineComplexType = child.querySelector(':scope > complexType');
+            if (inlineComplexType) {
+                // Recursively parse the inline structure
+                structure.elements[childName].structure = parseElementStructure(child);
+            }
         });
     }
 

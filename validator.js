@@ -450,7 +450,46 @@ function validateStructure(xmlDoc, xmlString) {
   // Validate root element structure using dynamic validation
   validateElementDynamic(root, expectedRoot, PARSED_SCHEMA, errors, expectedRoot, xmlString);
 
+  // Check for duplicate names within each element type
+  validateUniqueNames(root, errors);
+
   return errors;
+}
+
+/**
+ * Validate that names are unique within each element type (POLYGON, SPOT, GROUP, IMAGELAYER)
+ */
+function validateUniqueNames(root, errors) {
+  const elementTypes = ['POLYGON', 'SPOT', 'GROUP', 'IMAGELAYER'];
+  
+  for (const elementType of elementTypes) {
+    const elements = root.querySelectorAll(elementType);
+    const names = new Map(); // name -> array of indices
+    
+    elements.forEach((el, index) => {
+      const nameEl = el.querySelector(':scope > NAME');
+      if (nameEl) {
+        const name = nameEl.textContent.trim();
+        if (name) {
+          if (!names.has(name)) {
+            names.set(name, []);
+          }
+          names.get(name).push(index + 1);
+        }
+      }
+    });
+    
+    // Report duplicates
+    for (const [name, indices] of names.entries()) {
+      if (indices.length > 1) {
+        errors.push({
+          type: 'Nombre Duplicado',
+          message: `El nombre "${name}" está duplicado en ${indices.length} elementos <${elementType}>`,
+          location: `Elementos: ${indices.join(', ')}`
+        });
+      }
+    }
+  }
 }
 
 /**
@@ -498,8 +537,13 @@ function validateElementDynamic(element, elementName, schema, errors, path = '',
       childElements.forEach((childElement, index) => {
         const childPath = `${path} > ${childName}${childElements.length > 1 ? `[${index}]` : ''}`;
 
-        // Check for inline type first (like LINECOLOR, AREACOLOR with inline restrictions)
-        if (childDef.inlineType) {
+        // Check for inline structure (like GROUPS which contains GROUP elements)
+        console.log(`Validating child: ${childName}, has structure: ${!!childDef.structure}, has inlineType: ${!!childDef.inlineType}, has type: ${childDef.type}`);
+        if (childDef.structure) {
+          console.log(`  -> Entering inline structure for ${childName}`, childDef.structure);
+          // Validate elements within the inline structure
+          validateInlineStructure(childElement, childDef.structure, schema, errors, childPath, xmlString);
+        } else if (childDef.inlineType) {
           const value = childElement.textContent.trim();
 
           // Check for empty required fields
@@ -571,6 +615,78 @@ function validateElementDynamic(element, elementName, schema, errors, path = '',
 
   if (complexTypeName) {
     validateAgainstComplexType(element, complexTypeName, schema, errors, path, xmlString);
+  }
+}
+
+/**
+ * Validate elements within an inline structure (like GROUPS containing GROUP elements)
+ */
+function validateInlineStructure(element, structure, schema, errors, path, xmlString) {
+  console.log(`validateInlineStructure called for ${element.tagName}, structure:`, structure);
+  // Check required elements in the inline structure
+  for (const [elemName, elemDef] of Object.entries(structure.elements)) {
+    if (elemDef.required) {
+      const childElement = element.querySelector(`:scope > ${elemName}`);
+      if (!childElement) {
+        let locationStr = '';
+        if (xmlString && typeof findLocation === 'function') {
+          const loc = findLocation(xmlString, element.tagName, '');
+          if (loc) locationStr = ` (${loc})`;
+        }
+
+        errors.push({
+          type: 'Campo Requerido Faltante',
+          message: `${path}: Falta el campo requerido <${elemName}>`,
+          location: `${path}${locationStr}`
+        });
+      }
+    }
+  }
+
+  // Validate existing elements in the inline structure
+  for (const [elemName, elemDef] of Object.entries(structure.elements)) {
+    const childElements = element.querySelectorAll(`:scope > ${elemName}`);
+
+    childElements.forEach((childElement, index) => {
+      const childPath = `${path} > ${elemName}${childElements.length > 1 ? `[${index + 1}]` : ''}`;
+      const value = childElement.textContent.trim();
+
+      // Check empty required
+      if (value === '' && !elemDef.type) {
+        if (elemDef.required) {
+          let locationStr = '';
+          if (xmlString && typeof findLocation === 'function') {
+            const loc = findLocation(xmlString, elemName, '');
+            if (loc) locationStr = ` (${loc})`;
+          }
+
+          errors.push({
+            type: 'Valor Requerido Faltante',
+            message: `${childPath}: El campo <${elemName}> es obligatorio y no puede estar vacío`,
+            location: `${childPath}${locationStr}`
+          });
+        }
+        return;
+      }
+
+      // Validate based on type
+      if (elemDef.inlineType) {
+        validateValue(value, elemDef.inlineType, errors, childPath, elemName, xmlString);
+      } else if (elemDef.type) {
+        const simpleType = schema.simpleTypes[elemDef.type];
+        if (simpleType) {
+          validateValue(value, simpleType, errors, childPath, elemName, xmlString);
+        } else if (elemDef.type.startsWith('xs:')) {
+          validateValue(value, { baseType: elemDef.type, restrictions: {} }, errors, childPath, elemName, xmlString);
+        } else {
+          // It's a complex type - validate recursively
+          const complexType = schema.complexTypes[elemDef.type];
+          if (complexType) {
+            validateAgainstComplexType(childElement, elemDef.type, schema, errors, childPath, xmlString);
+          }
+        }
+      }
+    });
   }
 }
 
